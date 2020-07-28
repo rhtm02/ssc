@@ -45,6 +45,24 @@ def make_2d_sequencial_data(window_size, x):
         X[i] = x[i:i + window_size].reshape(1, window_size,1)
     return X
 def make_ssc_dataset(predict_index, x, y):
-    Y = y.values[x.shape[1] + predict_index - 1:]
+    Y = y.values[x.shape[1] + predict_index:]
     X = x[:Y.shape[0]]
     return X, Y
+'''
+x = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+X = pd.DataFrame(data = x, columns=['x'])
+y = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+Y = pd.DataFrame(data = y, columns=['y'])
+X,Y = make_ssc_dataset(10,X.values, Y)
+for i in range(len(X)):
+    print(X[i],Y[i])
+'''
+'''
+x = np.asarray([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]])
+y = np.asarray([1,2,3,4,5,6,7])
+X = make_3d_sequencial_data(3,x)
+Y = pd.DataFrame(data = y, columns=['y'])
+X,Y = make_ssc_dataset(2,X, Y)
+for i in range(len(X)):
+    print(X[i],Y[i])
+'''

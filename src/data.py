@@ -17,23 +17,40 @@ FEATURES = ['TQI_J', 'APS', 'gdm_TgtGear', 'CANRx_LONG_ACCEL',
        'iom_Acc_real', 'BrakeSwitchLocal', 'iom_ECU_Lat_Accel',
        'gsm_DrivingMode_CAN']
 
-def dataload(path = '../data/bps_aps_binary/mean',validation_ratio = 0.1
+def test_dataload(path = '../data/bps_aps_binary/mean/200610_PDe_E441489_Test_출근_광주2서울_mean.csv'
+                          , y_label = 'BrakeSwitchLocal', window_size = 50):
+    data = pd.read_csv(path)[FEATURES]
+    x = data[FEATURES]
+    y = data[y_label]
+    x = useful_module.make_3d_sequencial_data(window_size, x.values)
+    test_x,test_y = useful_module.make_ssc_dataset(predict_index = 15,x = x,y = y)
+    return test_x, test_y
+
+def dataload(path = '../data/bps_aps_binary/mean',train_ratio = 0.8
                           , y_label = 'BrakeSwitchLocal', window_size = 50):
     file_list = os.listdir(path)
     file_list = sorted(file_list)
+    #print(file_list)
     X = []
     Y = []
-    for file in file_list:
+    for file in file_list[:-1]:
+        #print(file)
         data = pd.read_csv(path + '/' + file)[FEATURES]
         x = data[FEATURES]
-        y = data[y_label][window_size:]
+        y = data[y_label]
         x = useful_module.make_3d_sequencial_data(window_size, x.values)
         x,y = useful_module.make_ssc_dataset(predict_index = 15,x = x,y = y)
         X += x.tolist()
         Y += y.tolist()
     X = np.asarray(X)
     Y = np.asarray(Y)
-    train_x, val_x, train_y, val_y = train_test_split(X, Y, test_size=validation_ratio, shuffle=None, random_state=123)
-    #print(train_x.shape, (train_y==0).sum(),(train_y==1).sum(), val_x.shape, (val_y==0).sum(), (val_y==1).sum())
+    train_x = X[:int(len(X)*train_ratio)]
+    train_y = Y[:int(len(X)*train_ratio)]
+    val_x = X[int(len(X)*train_ratio):]
+    val_y = Y[int(len(X)*train_ratio):]
+    print(train_x.shape, (train_y==0).sum(),(train_y==1).sum(), val_x.shape, (val_y==0).sum(), (val_y==1).sum())
     #print(X.tolist())
     return train_x, train_y, val_x, val_y
+
+
+#dataload()
