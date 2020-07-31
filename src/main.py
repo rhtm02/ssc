@@ -8,20 +8,32 @@ from loss import custom_loss
 if(__name__ == '__main__'):
     loss = custom_loss()
 
-    for label in ['BrakeSwitchLocal']:
-        for WINSIZE in [32,64]:
-            EPOCH = 1000
-            BATCHSIZE = 200
-            for UNIT in [1,2,4,8,16,32,64]:
-                Version = str(WINSIZE) + '_' + str(UNIT)
-                X,Y,valX,valY = data.dataload(path = '../data/bps_aps_binary/mean',train_ratio = 0.8, y_label = label, window_size = WINSIZE)
-                LSTM = models.BDLSTM(X, path = Version, unit = UNIT, label = label)
-                modelcheck = tf.keras.callbacks.ModelCheckpoint(filepath='../result/' + label + '/' + Version + '/' + Version + '.h5', save_weights_only=False, monitor='val_loss',mode='min',save_best_only=True)
-                earlystopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=8)
-                LSTM.compile(optimizer = 'rmsprop', loss = loss.ssc_loss, metrics = ['accuracy'])
-                print(LSTM(X[1:2])[0][0].numpy())
-                print(LSTM.summary())
-                history = LSTM.fit(X,Y,callbacks=[modelcheck,earlystopping] ,validation_data = (valX,valY),epochs = EPOCH, verbose = 1)
-                save = pd.DataFrame(data = history.history)
-                save.to_csv('../result/' + label + '/' + Version + '/history.csv')
-                tf.keras.backend.clear_session()
+    for label in ['APS','BrakeSwitchLocal']:
+        EPOCH = 1000
+        BATCHSIZE = 500
+        if(label == 'APS'):
+            FEATURE_LEN = len(data.APS_FEATURES)
+        else:
+            FEATURE_LEN = len(data.BPS_FEATURES)
+        for UNIT in [1,2,4,8,16,32,64, 128]:
+            Version = str(UNIT)
+
+            LSTM = models.BDLSTM(path = Version, unit = UNIT, label = label, shape = (None, FEATURE_LEN))
+            earlystopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=8)
+            LSTM.compile(optimizer = 'rmsprop', loss = 'binary_crossentropy', metrics = ['accuracy'])
+            print(LSTM.summary())
+            save = pd.DataFrame()
+            for WINSIZE in [2, 4, 8, 16, 32, 64, 128, 256]:
+                X, Y, valX, valY = data.dataload(path='../data/bps_aps_binary/mean', train_ratio=0.8, y_label=label,
+                                                 window_size=WINSIZE)
+                print(X.shape)
+                modelcheck = tf.keras.callbacks.ModelCheckpoint(
+                    filepath='../result/' + label + '/' + Version + '/' +str(WINSIZE) + '_' +  Version + '.h5', save_weights_only=False,
+                    monitor='val_loss', mode='min', save_best_only=True)
+
+                history = LSTM.fit(X,Y,batch_size = BATCHSIZE,callbacks=[modelcheck,earlystopping] ,validation_data = (valX,valY),epochs = EPOCH, verbose = 1)
+                temp = pd.DataFrame(data = history.history)
+                save.append(temp)
+                del X,Y,valX,valY
+            save.to_csv('../result/' + label + '/' + Version + '/history.csv')
+            tf.keras.backend.clear_session()

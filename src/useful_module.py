@@ -35,6 +35,7 @@ def make_3d_sequencial_data(window_size, x):
         # print(x[i:i+ window_size].reshape(1,window_size,x.shape[1]))
         X[i] = x[i:i + window_size].reshape(1, window_size, x.shape[1])
     return X
+
 def make_2d_sequencial_data(window_size, x):
     # x,y is numpy values
     input_len = x.shape[0]
@@ -48,6 +49,7 @@ def make_ssc_dataset(predict_index, x, y):
     Y = y.values[x.shape[1] + predict_index:]
     X = x[:Y.shape[0]]
     return X, Y
+
 '''
 x = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 X = pd.DataFrame(data = x, columns=['x'])
@@ -60,9 +62,12 @@ for i in range(len(X)):
 '''
 x = np.asarray([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]])
 y = np.asarray([1,2,3,4,5,6,7])
-X = make_3d_sequencial_data(3,x)
+X = make_3d_sequencial_accumulate_data(x)
+print(X)
 Y = pd.DataFrame(data = y, columns=['y'])
-X,Y = make_ssc_dataset(2,X, Y)
+X,Y = make_ssc_accumulate_dataset(3,X, Y)
 for i in range(len(X)):
     print(X[i],Y[i])
+    print(type(X), type(Y))
 '''
+
