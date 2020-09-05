@@ -1,8 +1,11 @@
 import tensorflow as tf
 
 class custom_loss:
-    def __init__(self):
-        pass
+    def __init__(self, Ti_ON_in = 30, Ti_ON_out = 15, Ti_OFF_in = 30, Ti_OFF_out = 15):
+        self.Ti_ON_in = Ti_ON_in
+        self.Ti_ON_out = Ti_ON_out
+        self.Ti_OFF_in = Ti_OFF_in
+        self.Ti_OFF_out = Ti_OFF_out
     def ssc_loss(self, y_true, y_pred):
         y_pred_ = y_pred
         y_true_ = tf.keras.backend.cast_to_floatx(y_true)

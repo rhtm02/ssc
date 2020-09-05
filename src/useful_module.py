@@ -1,7 +1,7 @@
 #for useful method code
 import numpy as np
 import pandas as pd
-import sklearn
+from sklearn.preprocessing import OneHotEncoder
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
@@ -26,7 +26,7 @@ def draw_confusion(predict, ground_truth,label_num = 6, dir = '',score = 0):
     plt.savefig(dir + '_cm.png')
     plt.show()
 
-def make_3d_sequencial_data(window_size, x):
+def make_3d_sequencial_data(window_size, x,y):
     # x,y is numpy values
     input_len = x.shape[0]
     # output data shape
@@ -34,40 +34,112 @@ def make_3d_sequencial_data(window_size, x):
     for i in range(input_len - (window_size - 1)):
         # print(x[i:i+ window_size].reshape(1,window_size,x.shape[1]))
         X[i] = x[i:i + window_size].reshape(1, window_size, x.shape[1])
-    return X
+    #print(y[window_size - 1:])
+    Y = make_label_4(np.asarray(y[window_size - 1:]))
+    return X, Y
 
-def make_2d_sequencial_data(window_size, x):
+def make_3d_seq2seq_data(window_size, x):
     # x,y is numpy values
     input_len = x.shape[0]
     # output data shape
-    X = np.zeros([input_len - (window_size - 1), window_size,1])
+    X = np.zeros([input_len - (window_size - 1), window_size, x.shape[1]])
     for i in range(input_len - (window_size - 1)):
         # print(x[i:i+ window_size].reshape(1,window_size,x.shape[1]))
-        X[i] = x[i:i + window_size].reshape(1, window_size,1)
-    return X
-def make_ssc_dataset(predict_index, x, y):
-    Y = y.values[x.shape[1] + predict_index:]
-    X = x[:Y.shape[0]]
+        X[i] = x[i:i + window_size].reshape(1, window_size, x.shape[1])
+    #print(y[window_size - 1:])
+    Y = np.asarray(X[window_size - 1:])
+    X = np.asarray(X[:-(window_size - 1)])
     return X, Y
 
-'''
-x = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-X = pd.DataFrame(data = x, columns=['x'])
-y = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-Y = pd.DataFrame(data = y, columns=['y'])
-X,Y = make_ssc_dataset(10,X.values, Y)
-for i in range(len(X)):
-    print(X[i],Y[i])
-'''
-'''
-x = np.asarray([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]])
-y = np.asarray([1,2,3,4,5,6,7])
-X = make_3d_sequencial_accumulate_data(x)
-print(X)
-Y = pd.DataFrame(data = y, columns=['y'])
-X,Y = make_ssc_accumulate_dataset(3,X, Y)
-for i in range(len(X)):
-    print(X[i],Y[i])
-    print(type(X), type(Y))
-'''
+def make_ssc_dataset(predict_index, x, y):
+    #X is input list
+    Y = y[predict_index:]
+    X = []
+    for i in x:
+        X.append(i[:Y.shape[0]])
+        print(i[:Y.shape[0]].shape, Y.shape)
+    return X, np.asarray(Y)
 
+def make_label_4(y):
+    # x,y is numpy array
+    OOE = OneHotEncoder()
+    Y = [0]
+    for index in range(1,len(y)):
+        if((y[index - 1] == 0) and (y[index] == 0)):
+            Y.append(0)
+        elif((y[index - 1] == 1) and (y[index] == 1)):
+            Y.append(1)
+        elif((y[index - 1] == 0) and (y[index] == 1)):
+            Y.append(2)
+        else:
+            Y.append(3)
+    Y = np.asarray(Y)
+    Y = Y.reshape(-1,1)
+    OOE.fit([[0],[1],[2],[3]])
+    Y = OOE.transform(Y).toarray()
+    return np.asarray(Y)
+def make_label_2(y):
+    # x,y is numpy array
+    OOE = OneHotEncoder()
+
+    Y = y.reshape(-1,1)
+    OOE.fit([[0],[1]])
+    Y = OOE.transform(Y).toarray()
+    return np.asarray(Y)
+
+def label4_inverse(y):
+    Y = []
+    for temp in y[1:]:
+        i = np.argmax(temp)
+        print(temp,i)
+        if(len(Y) == 0):
+            if(i == 0):
+                Y.append(0)
+                Y.append(0)
+            elif(i == 1):
+                Y.append(1)
+                Y.append(1)
+            elif(i == 2):
+                Y.append(0)
+                Y.append(1)
+            elif (i == 3):
+                Y.append(1)
+                Y.append(0)
+        else:
+            if(i == 0):
+                Y.append(0)
+            elif(i == 1):
+                Y.append(1)
+            elif(i == 2):
+                Y.append(1)
+            elif (i == 3):
+                Y.append(0)
+    Y.insert(0,0)
+    Y = np.asarray(Y)
+    return Y
+'''
+x = [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20],[21,22,23,24]]
+y = [0,1,0,0,1,0]
+X = pd.DataFrame(data = x, columns=['1','2','3','4'])
+Y = pd.DataFrame(data = y, columns=['1'])
+X,Y = make_3d_sequencial_data(2,X.values,Y.values)
+print(Y)
+Y_ = label4_inverse(Y)
+for i in range(len(y)):
+    print(y[i],Y_[i])
+for i in range(len(X)):
+    print(X[i],Y[i])
+X,Y = make_ssc_dataset(2,[X],Y)
+#print(Y)
+for i in range(len(X[0])):
+    print(X[0][i],Y[i])
+
+x = np.asarray([[1,2,3,4],[2,6,7,8],[3,10,11,12],[4,14,15,16],[5,18,19,20],[6,22,23,24],[7,26,27,28],[8,31,32,33],[9,35,36,37]])
+X,Y = make_3d_seq2seq_data(2,x)
+a = []
+print(X[:-1])
+for i in X[:-1]:
+    a.append(i[-1])
+print(a)
+print(Y[1:])
+'''
